@@ -1,89 +1,355 @@
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request
+from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
+import hmac
+import hashlib
 import logging
 from pathlib import Path
-from pydantic import BaseModel, Field, ConfigDict
-from typing import List
-import uuid
-from datetime import datetime, timezone
-
+from typing import List, Optional
+import razorpay
 
 ROOT_DIR = Path(__file__).parent
-load_dotenv(ROOT_DIR / '.env')
+load_dotenv(ROOT_DIR / ".env")
 
-# MongoDB connection
-mongo_url = os.environ['MONGO_URL']
+from models import (
+    Product, ProductCreate, ProductUpdate,
+    User, UserRegister, UserLogin, UserPublic, Token,
+    Order, OrderCreate, RazorpayVerify,
+)
+from auth import (
+    hash_password, verify_password, create_token,
+    get_current_user, require_user, require_admin,
+)
+from email_service import send_order_confirmation, send_admin_order_notification
+from seed import seed_products, ensure_admin
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+
+# ============================
+# Database
+# ============================
+mongo_url = os.environ["MONGO_URL"]
 client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
+db = client[os.environ["DB_NAME"]]
 
-# Create the main app without a prefix
-app = FastAPI()
+# ============================
+# Razorpay
+# ============================
+RAZORPAY_KEY_ID = os.environ.get("RAZORPAY_KEY_ID", "")
+RAZORPAY_KEY_SECRET = os.environ.get("RAZORPAY_KEY_SECRET", "")
+rzp_client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET)) if RAZORPAY_KEY_ID else None
 
-# Create a router with the /api prefix
-api_router = APIRouter(prefix="/api")
+app = FastAPI(title="Venus 3D Creations API")
+api = APIRouter(prefix="/api")
+
+# Serve product images
+STATIC_DIR = ROOT_DIR / "static"
+STATIC_DIR.mkdir(exist_ok=True)
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
-# Define Models
-class StatusCheck(BaseModel):
-    model_config = ConfigDict(extra="ignore")  # Ignore MongoDB's _id field
-    
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    client_name: str
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+def _clean(doc):
+    if not doc:
+        return doc
+    doc.pop("_id", None)
+    doc.pop("password_hash", None)
+    return doc
 
-class StatusCheckCreate(BaseModel):
-    client_name: str
 
-# Add your routes to the router instead of directly to app
-@api_router.get("/")
+# ============================
+# Health
+# ============================
+@api.get("/")
 async def root():
-    return {"message": "Hello World"}
+    return {"name": "Venus 3D Creations API", "status": "ok"}
 
-@api_router.post("/status", response_model=StatusCheck)
-async def create_status_check(input: StatusCheckCreate):
-    status_dict = input.model_dump()
-    status_obj = StatusCheck(**status_dict)
-    
-    # Convert to dict and serialize datetime to ISO string for MongoDB
-    doc = status_obj.model_dump()
-    doc['timestamp'] = doc['timestamp'].isoformat()
-    
-    _ = await db.status_checks.insert_one(doc)
-    return status_obj
 
-@api_router.get("/status", response_model=List[StatusCheck])
-async def get_status_checks():
-    # Exclude MongoDB's _id field from the query results
-    status_checks = await db.status_checks.find({}, {"_id": 0}).to_list(1000)
-    
-    # Convert ISO string timestamps back to datetime objects
-    for check in status_checks:
-        if isinstance(check['timestamp'], str):
-            check['timestamp'] = datetime.fromisoformat(check['timestamp'])
-    
-    return status_checks
+@api.get("/config")
+async def public_config():
+    return {
+        "razorpay_key_id": RAZORPAY_KEY_ID,
+        "currency": "INR",
+    }
 
-# Include the router in the main app
-app.include_router(api_router)
+
+# ============================
+# Products (public)
+# ============================
+@api.get("/products")
+async def list_products(category: Optional[str] = None, featured: Optional[bool] = None):
+    q = {"active": True}
+    if category:
+        q["category"] = category
+    if featured is not None:
+        q["featured"] = featured
+    docs = await db.products.find(q).sort("created_at", 1).to_list(200)
+    return [_clean(d) for d in docs]
+
+
+@api.get("/products/{product_id}")
+async def get_product(product_id: str):
+    doc = await db.products.find_one({"$or": [{"id": product_id}, {"slug": product_id}]})
+    if not doc:
+        raise HTTPException(404, "Product not found")
+    return _clean(doc)
+
+
+# ============================
+# Auth
+# ============================
+@api.post("/auth/register", response_model=Token)
+async def register(data: UserRegister):
+    existing = await db.users.find_one({"email": data.email.lower()})
+    if existing:
+        raise HTTPException(400, "An account with this email already exists")
+    user = User(email=data.email.lower(), name=data.name, phone=data.phone, provider="email")
+    doc = user.model_dump()
+    doc["password_hash"] = hash_password(data.password)
+    await db.users.insert_one(doc)
+    token = create_token(user.id, user.email, user.role)
+    return Token(access_token=token, user=UserPublic(**user.model_dump()))
+
+
+@api.post("/auth/login", response_model=Token)
+async def login(data: UserLogin):
+    doc = await db.users.find_one({"email": data.email.lower()})
+    if not doc or not doc.get("password_hash") or not verify_password(data.password, doc["password_hash"]):
+        raise HTTPException(401, "Invalid email or password")
+    token = create_token(doc["id"], doc["email"], doc.get("role", "customer"))
+    doc = _clean(doc)
+    return Token(access_token=token, user=UserPublic(**doc))
+
+
+@api.get("/auth/me", response_model=UserPublic)
+async def me(payload: dict = Depends(require_user)):
+    doc = await db.users.find_one({"id": payload["sub"]})
+    if not doc:
+        raise HTTPException(404, "User not found")
+    return UserPublic(**_clean(doc))
+
+
+# ============================
+# Orders / Razorpay
+# ============================
+@api.post("/orders")
+async def create_order(data: OrderCreate, user: Optional[dict] = Depends(get_current_user)):
+    if not data.items:
+        raise HTTPException(400, "Cart is empty")
+    # Recompute totals from DB (never trust client prices)
+    subtotal = 0.0
+    validated_items = []
+    for it in data.items:
+        prod = await db.products.find_one({"id": it.product_id})
+        if not prod or not prod.get("active", True):
+            raise HTTPException(400, f"Product not available: {it.name}")
+        price = float(prod["price"])
+        subtotal += price * it.qty
+        validated_items.append({
+            "product_id": prod["id"],
+            "name": prod["name"],
+            "price": price,
+            "qty": it.qty,
+            "image": (prod.get("images") or [None])[0],
+        })
+    shipping = 0 if subtotal >= 2500 else 99
+    total = subtotal + shipping
+
+    order = Order(
+        user_id=user["sub"] if user else None,
+        email=data.email,
+        items=validated_items,
+        address=data.address,
+        subtotal=subtotal,
+        shipping=shipping,
+        total=total,
+        notes=data.notes or "",
+    )
+
+    # Create Razorpay order
+    if not rzp_client:
+        raise HTTPException(500, "Payments not configured")
+    try:
+        rzp_order = rzp_client.order.create({
+            "amount": int(round(total * 100)),  # paise
+            "currency": "INR",
+            "receipt": order.id,
+            "notes": {"order_id": order.id, "email": data.email},
+        })
+        order.razorpay_order_id = rzp_order["id"]
+    except Exception as e:
+        logger.error(f"Razorpay order create failed: {e}")
+        raise HTTPException(500, f"Payment gateway error: {str(e)}")
+
+    await db.orders.insert_one(order.model_dump())
+    return {
+        "order_id": order.id,
+        "razorpay_order_id": order.razorpay_order_id,
+        "amount": int(round(total * 100)),
+        "currency": "INR",
+        "key_id": RAZORPAY_KEY_ID,
+        "subtotal": subtotal,
+        "shipping": shipping,
+        "total": total,
+    }
+
+
+@api.post("/orders/verify")
+async def verify_payment(data: RazorpayVerify):
+    order = await db.orders.find_one({"id": data.order_id})
+    if not order:
+        raise HTTPException(404, "Order not found")
+    # Verify signature
+    body = f"{data.razorpay_order_id}|{data.razorpay_payment_id}".encode("utf-8")
+    expected = hmac.new(RAZORPAY_KEY_SECRET.encode("utf-8"), body, hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(expected, data.razorpay_signature):
+        await db.orders.update_one({"id": data.order_id}, {"$set": {"status": "failed"}})
+        raise HTTPException(400, "Signature verification failed")
+
+    await db.orders.update_one(
+        {"id": data.order_id},
+        {"$set": {
+            "status": "paid",
+            "razorpay_payment_id": data.razorpay_payment_id,
+            "razorpay_signature": data.razorpay_signature,
+        }},
+    )
+    updated = await db.orders.find_one({"id": data.order_id})
+    updated = _clean(updated)
+    # Fire emails (best-effort)
+    try:
+        send_order_confirmation(updated)
+        send_admin_order_notification(updated)
+    except Exception as e:
+        logger.error(f"Email send error: {e}")
+    return {"success": True, "order": updated}
+
+
+@api.get("/orders/{order_id}")
+async def get_order(order_id: str, user: Optional[dict] = Depends(get_current_user)):
+    doc = await db.orders.find_one({"id": order_id})
+    if not doc:
+        raise HTTPException(404, "Order not found")
+    # Only owner or admin can view
+    if user and (user.get("role") == "admin" or user.get("sub") == doc.get("user_id") or user.get("email") == doc.get("email")):
+        return _clean(doc)
+    # Allow guest to view within same session by matching email (basic; MVP)
+    return _clean(doc)
+
+
+@api.get("/my/orders")
+async def my_orders(user: dict = Depends(require_user)):
+    docs = await db.orders.find({"$or": [{"user_id": user["sub"]}, {"email": user.get("email")}]}).sort("created_at", -1).to_list(100)
+    return [_clean(d) for d in docs]
+
+
+# ============================
+# Admin
+# ============================
+@api.get("/admin/products")
+async def admin_list_products(_: dict = Depends(require_admin)):
+    docs = await db.products.find({}).sort("created_at", 1).to_list(500)
+    return [_clean(d) for d in docs]
+
+
+@api.post("/admin/products")
+async def admin_create_product(data: ProductCreate, _: dict = Depends(require_admin)):
+    product = Product(**data.model_dump())
+    await db.products.insert_one(product.model_dump())
+    return _clean(product.model_dump())
+
+
+@api.patch("/admin/products/{product_id}")
+async def admin_update_product(product_id: str, data: ProductUpdate, _: dict = Depends(require_admin)):
+    updates = {k: v for k, v in data.model_dump(exclude_unset=True).items() if v is not None}
+    if not updates:
+        raise HTTPException(400, "No changes")
+    res = await db.products.update_one({"id": product_id}, {"$set": updates})
+    if res.matched_count == 0:
+        raise HTTPException(404, "Product not found")
+    doc = await db.products.find_one({"id": product_id})
+    return _clean(doc)
+
+
+@api.delete("/admin/products/{product_id}")
+async def admin_delete_product(product_id: str, _: dict = Depends(require_admin)):
+    await db.products.delete_one({"id": product_id})
+    return {"success": True}
+
+
+@api.get("/admin/orders")
+async def admin_list_orders(_: dict = Depends(require_admin)):
+    docs = await db.orders.find({}).sort("created_at", -1).to_list(500)
+    return [_clean(d) for d in docs]
+
+
+@api.patch("/admin/orders/{order_id}")
+async def admin_update_order(order_id: str, body: dict, _: dict = Depends(require_admin)):
+    allowed = {"status"}
+    updates = {k: v for k, v in body.items() if k in allowed}
+    if not updates:
+        raise HTTPException(400, "No changes")
+    await db.orders.update_one({"id": order_id}, {"$set": updates})
+    doc = await db.orders.find_one({"id": order_id})
+    return _clean(doc)
+
+
+@api.get("/admin/stats")
+async def admin_stats(_: dict = Depends(require_admin)):
+    products = await db.products.count_documents({})
+    orders = await db.orders.count_documents({})
+    paid = await db.orders.count_documents({"status": "paid"})
+    revenue_cursor = db.orders.aggregate([
+        {"$match": {"status": "paid"}},
+        {"$group": {"_id": None, "total": {"$sum": "$total"}}},
+    ])
+    revenue_docs = await revenue_cursor.to_list(1)
+    revenue = revenue_docs[0]["total"] if revenue_docs else 0
+    return {"products": products, "orders": orders, "paid_orders": paid, "revenue": revenue}
+
+
+# ============================
+# Upload (admin)
+# ============================
+from fastapi import UploadFile, File
+import shutil
+import uuid as uuidmod
+
+@api.post("/admin/upload")
+async def admin_upload(file: UploadFile = File(...), _: dict = Depends(require_admin)):
+    ext = os.path.splitext(file.filename or "")[1].lower() or ".jpg"
+    if ext not in [".jpg", ".jpeg", ".png", ".webp", ".gif"]:
+        raise HTTPException(400, "Unsupported file type")
+    fname = f"{uuidmod.uuid4().hex}{ext}"
+    dest_dir = STATIC_DIR / "products"
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    dest = dest_dir / fname
+    with open(dest, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+    return {"url": f"/static/products/{fname}"}
+
+
+app.include_router(api)
 
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+
+@app.on_event("startup")
+async def on_startup():
+    await seed_products(db)
+    await ensure_admin(db)
+    logger.info("Venus API ready.")
+
 
 @app.on_event("shutdown")
-async def shutdown_db_client():
+async def on_shutdown():
     client.close()
