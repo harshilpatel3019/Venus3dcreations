@@ -11,7 +11,7 @@ BACKEND_URL = os.environ.get("FRONTEND_URL", "").rstrip("/")  # backend & fronte
 
 # Images extracted from the PDF live in /app/backend/static/products/
 # The order in the catalogue matches PDF image extraction order (pdfimages puts them roughly in order).
-STATIC_BASE = "/static/products"
+STATIC_BASE = "/api/static/products"
 
 SEED_LAMPS = [
     {

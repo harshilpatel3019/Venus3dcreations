@@ -3,9 +3,12 @@ import { Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
+import { imgUrl, formatINR } from "../api";
 
 const ProductCard = ({ product }) => {
   const { addItem } = useCart();
+
+  const firstImg = (product.images && product.images[0]) || product.image;
 
   const onAdd = (e) => {
     e.preventDefault();
@@ -14,9 +17,9 @@ const ProductCard = ({ product }) => {
   };
 
   return (
-    <Link to={`/product/${product.id}`} className="group vc-product-card block">
+    <Link to={`/product/${product.slug || product.id}`} className="group vc-product-card block">
       <div className="relative aspect-[4/5] overflow-hidden bg-[var(--sand)]">
-        <img src={product.image} alt={product.name} className="vc-product-img w-full h-full object-cover" />
+        <img src={imgUrl(firstImg)} alt={product.name} className="vc-product-img w-full h-full object-cover" />
         {product.tag && (
           <span className="absolute top-4 left-4 bg-[var(--cream)] text-[var(--espresso)] text-[10px] tracking-[0.2em] uppercase px-3 py-1.5">
             {product.tag}
@@ -35,8 +38,10 @@ const ProductCard = ({ product }) => {
           {product.name}
         </h3>
         <div className="flex items-center justify-between mt-1.5">
-          <span className="text-xs tracking-[0.14em] uppercase text-[var(--espresso)]/50">{product.material?.split("\u00b7")[0]?.trim() || "Signature series"}</span>
-          <span className="text-sm text-[var(--espresso)]">${product.price}</span>
+          <span className="text-xs tracking-[0.14em] uppercase text-[var(--espresso)]/50">
+            {product.series || (product.material?.split("\u00b7")[0]?.trim()) || "Signature series"}
+          </span>
+          <span className="text-sm text-[var(--espresso)]">{formatINR(product.price)}</span>
         </div>
       </div>
     </Link>

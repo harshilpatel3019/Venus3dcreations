@@ -1,8 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useMemo } from "react";
 
 const CartContext = createContext(null);
-
-const STORAGE_KEY = "venus_cart_v1";
+const STORAGE_KEY = "venus_cart_v2";
 
 export const CartProvider = ({ children }) => {
   const [items, setItems] = useState(() => {
@@ -22,10 +21,17 @@ export const CartProvider = ({ children }) => {
   const addItem = (product, qty = 1) => {
     setItems((prev) => {
       const existing = prev.find((i) => i.id === product.id);
-      if (existing) {
-        return prev.map((i) => (i.id === product.id ? { ...i, qty: i.qty + qty } : i));
-      }
-      return [...prev, { id: product.id, name: product.name, price: product.price, image: product.image, qty }];
+      if (existing) return prev.map((i) => (i.id === product.id ? { ...i, qty: i.qty + qty } : i));
+      return [
+        ...prev,
+        {
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          image: (product.images && product.images[0]) || product.image,
+          qty,
+        },
+      ];
     });
     setOpen(true);
   };

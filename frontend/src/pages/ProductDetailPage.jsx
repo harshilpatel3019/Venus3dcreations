@@ -1,17 +1,39 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { products } from "../mock";
 import { useCart } from "../context/CartContext";
 import { toast } from "sonner";
-import { Minus, Plus, Truck, ShieldCheck, RefreshCcw, ChevronRight } from "lucide-react";
+import { Minus, Plus, Truck, ShieldCheck, RefreshCcw, ChevronRight, Loader2 } from "lucide-react";
 import ProductCard from "../components/ProductCard";
+import { fetchProduct, fetchProducts, imgUrl, formatINR } from "../api";
 
 const ProductDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const product = products.find((p) => p.id === id);
-  const { addItem, setOpen } = useCart();
+  const { addItem } = useCart();
+  const [product, setProduct] = useState(null);
+  const [related, setRelated] = useState([]);
   const [qty, setQty] = useState(1);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    fetchProduct(id)
+      .then(async (p) => {
+        setProduct(p);
+        const all = await fetchProducts({ category: p.category });
+        setRelated(all.filter((x) => x.id !== p.id).slice(0, 4));
+      })
+      .catch(() => setProduct(null))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  if (loading) {
+    return (
+      <main className="bg-[var(--cream)] min-h-[60vh] flex items-center justify-center">
+        <Loader2 className="w-6 h-6 animate-spin text-[var(--copper)]" />
+      </main>
+    );
+  }
 
   if (!product) {
     return (
@@ -24,16 +46,10 @@ const ProductDetailPage = () => {
     );
   }
 
-  const related = products.filter((p) => p.category === product.category && p.id !== product.id).slice(0, 4);
+  const firstImg = product.images?.[0];
 
-  const onAdd = () => {
-    addItem(product, qty);
-    toast.success(`${product.name} added to bag`);
-  };
-  const onBuy = () => {
-    addItem(product, qty);
-    navigate("/cart");
-  };
+  const onAdd = () => { addItem(product, qty); toast.success(`${product.name} added to bag`); };
+  const onBuy = () => { addItem(product, qty); navigate("/cart"); };
 
   return (
     <main className="bg-[var(--cream)]">
@@ -51,68 +67,57 @@ const ProductDetailPage = () => {
 
       <div className="max-w-[1400px] mx-auto px-6 lg:px-10 py-12 lg:py-16">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-20">
-          {/* Gallery */}
           <div>
             <div className="aspect-[4/5] bg-[var(--sand)] overflow-hidden">
-              <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+              <img src={imgUrl(firstImg)} alt={product.name} className="w-full h-full object-cover" />
             </div>
-            <div className="grid grid-cols-4 gap-3 mt-3">
-              {[product.image, product.image, product.image, product.image].map((src, i) => (
-                <div key={i} className={`aspect-square overflow-hidden bg-[var(--sand)] cursor-pointer border-2 ${i === 0 ? "border-[var(--copper)]" : "border-transparent"}`}>
-                  <img src={src} alt="" className="w-full h-full object-cover" />
-                </div>
-              ))}
-            </div>
+            {product.images && product.images.length > 1 && (
+              <div className="grid grid-cols-4 gap-3 mt-3">
+                {product.images.map((src, i) => (
+                  <div key={i} className={`aspect-square overflow-hidden bg-[var(--sand)] cursor-pointer border-2 ${i === 0 ? "border-[var(--copper)]" : "border-transparent"}`}>
+                    <img src={imgUrl(src)} alt="" className="w-full h-full object-cover" />
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Details */}
           <div className="lg:pt-6">
             {product.tag && (
-              <span className="inline-block bg-[var(--espresso)] text-[var(--cream)] text-[10px] tracking-[0.25em] uppercase px-3 py-1.5 mb-6">
-                {product.tag}
-              </span>
+              <span className="inline-block bg-[var(--espresso)] text-[var(--cream)] text-[10px] tracking-[0.25em] uppercase px-3 py-1.5 mb-6">{product.tag}</span>
             )}
-            <p className="text-xs tracking-[0.2em] uppercase text-[var(--copper)] mb-3 capitalize">{product.category}</p>
+            {product.series && (
+              <p className="text-xs tracking-[0.2em] uppercase text-[var(--copper)] mb-3">{product.series}</p>
+            )}
             <h1 className="font-serif-display text-5xl lg:text-6xl leading-[1.05] text-[var(--espresso)]">{product.name}</h1>
-            <p className="font-serif-display text-3xl mt-6 text-[var(--espresso)]">${product.price.toFixed(2)}</p>
+            <p className="font-serif-display text-3xl mt-6 text-[var(--espresso)]">{formatINR(product.price)}</p>
             <p className="mt-6 text-[var(--espresso)]/70 leading-relaxed">{product.description}</p>
 
             <div className="mt-8 space-y-3 text-sm">
-              <div className="flex gap-3">
-                <span className="text-xs tracking-[0.14em] uppercase text-[var(--espresso)]/50 w-28">Material</span>
-                <span>{product.material}</span>
-              </div>
-              <div className="flex gap-3">
-                <span className="text-xs tracking-[0.14em] uppercase text-[var(--espresso)]/50 w-28">Dimensions</span>
-                <span>{product.dimensions}</span>
-              </div>
-              <div className="flex gap-3">
-                <span className="text-xs tracking-[0.14em] uppercase text-[var(--espresso)]/50 w-28">Lead time</span>
-                <span>{product.leadTime}</span>
-              </div>
+              {product.material && (
+                <div className="flex gap-3"><span className="text-xs tracking-[0.14em] uppercase text-[var(--espresso)]/50 w-28">Material</span><span>{product.material}</span></div>
+              )}
+              {product.dimensions && (
+                <div className="flex gap-3"><span className="text-xs tracking-[0.14em] uppercase text-[var(--espresso)]/50 w-28">Dimensions</span><span>{product.dimensions}</span></div>
+              )}
+              {product.lead_time && (
+                <div className="flex gap-3"><span className="text-xs tracking-[0.14em] uppercase text-[var(--espresso)]/50 w-28">Lead time</span><span>{product.lead_time}</span></div>
+              )}
             </div>
 
             <div className="mt-10 flex items-center gap-4">
               <div className="flex items-center border border-[var(--sand)] h-12">
-                <button onClick={() => setQty((v) => Math.max(1, v - 1))} className="w-11 h-full flex items-center justify-center hover:bg-[var(--sand)]">
-                  <Minus className="w-3 h-3" />
-                </button>
+                <button onClick={() => setQty((v) => Math.max(1, v - 1))} className="w-11 h-full flex items-center justify-center hover:bg-[var(--sand)]"><Minus className="w-3 h-3" /></button>
                 <span className="w-10 text-center text-sm">{qty}</span>
-                <button onClick={() => setQty((v) => v + 1)} className="w-11 h-full flex items-center justify-center hover:bg-[var(--sand)]">
-                  <Plus className="w-3 h-3" />
-                </button>
+                <button onClick={() => setQty((v) => v + 1)} className="w-11 h-full flex items-center justify-center hover:bg-[var(--sand)]"><Plus className="w-3 h-3" /></button>
               </div>
-              <button onClick={onAdd} className="flex-1 h-12 vc-btn-copper text-xs tracking-[0.2em] uppercase">
-                Add to bag
-              </button>
+              <button onClick={onAdd} className="flex-1 h-12 vc-btn-copper text-xs tracking-[0.2em] uppercase">Add to bag</button>
             </div>
-            <button onClick={onBuy} className="mt-3 w-full h-12 border border-[var(--espresso)] text-[var(--espresso)] text-xs tracking-[0.2em] uppercase hover:bg-[var(--espresso)] hover:text-[var(--cream)] transition-colors">
-              Buy now
-            </button>
+            <button onClick={onBuy} className="mt-3 w-full h-12 border border-[var(--espresso)] text-[var(--espresso)] text-xs tracking-[0.2em] uppercase hover:bg-[var(--espresso)] hover:text-[var(--cream)] transition-colors">Buy now</button>
 
             <div className="mt-10 grid grid-cols-3 gap-4 border-t border-[var(--sand)] pt-8">
               {[
-                { Icon: Truck, t: "Worldwide shipping" },
+                { Icon: Truck, t: "India-wide shipping" },
                 { Icon: ShieldCheck, t: "Studio warranty" },
                 { Icon: RefreshCcw, t: "14-day returns" },
               ].map(({ Icon, t }, i) => (
@@ -125,14 +130,11 @@ const ProductDetailPage = () => {
           </div>
         </div>
 
-        {/* Related */}
         {related.length > 0 && (
           <div className="mt-24">
             <h2 className="font-serif-display text-3xl lg:text-4xl text-[var(--espresso)] mb-10">You may also love</h2>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
-              {related.map((p) => (
-                <ProductCard key={p.id} product={p} />
-              ))}
+              {related.map((p) => (<ProductCard key={p.id} product={p} />))}
             </div>
           </div>
         )}

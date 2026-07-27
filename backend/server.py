@@ -46,10 +46,10 @@ rzp_client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET)) if RAZ
 app = FastAPI(title="Venus 3D Creations API")
 api = APIRouter(prefix="/api")
 
-# Serve product images
+# Serve product images (must be under /api to pass through k8s ingress)
 STATIC_DIR = ROOT_DIR / "static"
 STATIC_DIR.mkdir(exist_ok=True)
-app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+app.mount("/api/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
 def _clean(doc):
@@ -329,7 +329,7 @@ async def admin_upload(file: UploadFile = File(...), _: dict = Depends(require_a
     dest = dest_dir / fname
     with open(dest, "wb") as f:
         shutil.copyfileobj(file.file, f)
-    return {"url": f"/static/products/{fname}"}
+    return {"url": f"/api/static/products/{fname}"}
 
 
 app.include_router(api)
