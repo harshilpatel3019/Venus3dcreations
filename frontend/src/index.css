@@ -1,0 +1,66 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background: #F5F0E8;
+    color: #2A1D14;
+}
+
+code {
+    font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
+}
+
+@layer base {
+  :root {
+        /* Venus brand tokens */
+        --copper: #A87456;
+        --copper-dark: #8A5B3F;
+        --copper-light: #C69376;
+        --espresso: #2A1D14;
+        --ink: #0F0F0F;
+        --ivory: #F5F0E8;
+        --cream: #FAF7F2;
+        --sand: #E8DFD1;
+
+        --background: 35 36% 93%;
+        --foreground: 25 34% 12%;
+        --card: 34 37% 97%;
+        --card-foreground: 25 34% 12%;
+        --popover: 34 37% 97%;
+        --popover-foreground: 25 34% 12%;
+        --primary: 21 32% 50%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 35 25% 87%;
+        --secondary-foreground: 25 34% 12%;
+        --muted: 35 25% 87%;
+        --muted-foreground: 25 15% 40%;
+        --accent: 21 32% 50%;
+        --accent-foreground: 0 0% 100%;
+        --destructive: 0 70% 40%;
+        --destructive-foreground: 0 0% 100%;
+        --border: 30 20% 82%;
+        --input: 30 20% 82%;
+        --ring: 21 32% 50%;
+        --radius: 0.25rem;
+    }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  ::selection {
+    background: var(--copper);
+    color: #fff;
+  }
+}
