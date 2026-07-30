@@ -111,6 +111,79 @@ user_problem_statement: |
   Admin: venus3dcreations@gmail.com / venus@admin2025 (default seed).
 
 backend:
+  - task: "Startup seed & migration: 9 products with studio photography"
+    implemented: true
+    working: true
+    file: "backend/seed.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: |
+          Rewrote seed.py to be fully idempotent for production redeploys. It (a) inserts any of the 9 lamps that don't exist (Wavy, Spectra, Nova, Cargo, Retro, Small Table, Crumpled, Zoro, Shade), (b) migrates legacy image paths (lamp-000.jpg etc from PDF) to new studio photography (wavy-01.jpg, nova-01.jpg etc), (c) fills in images for any product missing them. TEST: drop products collection, restart backend, verify all 9 products seeded with correct image counts (wavy=3, spectra=5, nova=8, cargo=8, retro=8, small=8, crumpled=8, zoro=8, shade=5). Then insert a product with legacy image path 'lamp-000.jpg' via db.products.insert_one and restart - verify migration rewrites its images. Static images exist in /app/backend/static/products/ (95 files) served at /api/static/products/*.
+      - working: true
+        agent: "testing"
+        comment: |
+          ✅ COMPREHENSIVE SEED & MIGRATION TESTING COMPLETE - ALL 5 TESTS PASSED
+          
+          Created comprehensive test suite (backend_seed_test.py) covering production redeploy scenarios.
+          
+          TEST 1: Seed on empty database ✅ PASS
+          - Dropped products collection completely
+          - Restarted backend
+          - Verified exactly 9 products seeded
+          - Verified image counts for each product:
+            * Wavy Lamp: 3 images ✓
+            * Spectra Lamp: 5 images ✓
+            * Nova Lamp: 8 images ✓
+            * Cargo Lamp: 8 images ✓
+            * Retro Lamp: 8 images ✓
+            * Small Table Lamp: 8 images ✓
+            * Crumpled Lamp: 8 images ✓
+            * Zoro Lamp: 8 images ✓ (NEW product confirmed)
+            * Shade Lamp: 5 images ✓ (NEW product confirmed)
+          - All image URLs start with /api/static/products/ ✓
+          - All products have non-empty description, material, dimensions ✓
+          - All products have price > 0 in INR ✓
+          
+          TEST 2: Legacy image path migration ✅ PASS
+          - Manually set wavy-lamp images to legacy path: ["/api/static/products/lamp-000.jpg"]
+          - Restarted backend
+          - Verified migration rewrote to: ["/api/static/products/wavy-01.jpg", "/api/static/products/wavy-02.jpg", "/api/static/products/wavy-03.jpg"]
+          - Legacy path detection and migration working correctly ✓
+          
+          TEST 3: Idempotency ✅ PASS
+          - Restarted backend with all 9 products already present
+          - Verified no duplicates created (still exactly 9 products) ✓
+          - Verified existing correct image paths NOT overwritten ✓
+          - Safe for multiple restarts in production ✓
+          
+          TEST 4: Image files reachable ✅ PASS
+          - Tested HTTP access to sample images:
+            * /api/static/products/wavy-01.jpg: HTTP 200, image/jpeg ✓
+            * /api/static/products/zoro-01.jpg: HTTP 200, image/jpeg ✓
+            * /api/static/products/shade-01.jpg: HTTP 200, image/jpeg ✓
+            * /api/static/products/studio-01.jpg: HTTP 200, image/jpeg ✓ (homepage hero)
+          - All images served correctly with proper content-type ✓
+          
+          TEST 5: Admin still works ✅ PASS
+          - Login as venus3dcreations@gmail.com / venus@admin2025 successful ✓
+          - Token returned with role=admin ✓
+          - Admin authentication intact after seed operations ✓
+          
+          PRODUCTION READINESS CONFIRMED:
+          ✓ Fresh database seed works correctly
+          ✓ Legacy path migration works correctly
+          ✓ Idempotent - safe for multiple redeploys
+          ✓ All 9 products with correct studio photography
+          ✓ Static image serving working
+          ✓ Admin access preserved
+          
+          The seed & migration logic is production-ready for redeploy.
+
+
   - task: "Products listing and detail endpoints"
     implemented: true
     working: true
@@ -271,3 +344,36 @@ agent_communication:
       ⚠️ Static images at /static/products/*.jpg are served correctly by backend on localhost:8001 with proper content-type (image/jpeg), but external URL routes /static to frontend instead of backend. This is a Kubernetes ingress routing configuration issue, not a backend code issue. Backend code is correct.
       
       All backend APIs are production-ready. Ready for frontend integration.
+  - agent: "testing"
+    message: |
+      ✅ SEED & MIGRATION TESTING COMPLETE - PRODUCTION READY FOR REDEPLOY
+      
+      Comprehensive seed & migration testing completed per user request. Created backend_seed_test.py covering all 5 production redeploy scenarios.
+      
+      ALL 5 TESTS PASSED (5/5):
+      ✅ TEST 1: Seed on empty database - All 9 products seeded correctly with exact image counts
+      ✅ TEST 2: Legacy image path migration - Old PDF paths migrated to studio photography
+      ✅ TEST 3: Idempotency - No duplicates on restart, existing paths preserved
+      ✅ TEST 4: Image files reachable - All sample images HTTP 200 with correct content-type
+      ✅ TEST 5: Admin still works - Login successful with role=admin
+      
+      VERIFIED PRODUCT CATALOG (9 products):
+      • Wavy Lamp: 3 images ✓
+      • Spectra Lamp: 5 images ✓
+      • Nova Lamp: 8 images ✓
+      • Cargo Lamp: 8 images ✓
+      • Retro Lamp: 8 images ✓
+      • Small Table Lamp: 8 images ✓
+      • Crumpled Lamp: 8 images ✓
+      • Zoro Lamp: 8 images ✓ (NEW)
+      • Shade Lamp: 5 images ✓ (NEW)
+      
+      PRODUCTION READINESS CONFIRMED:
+      ✓ Fresh database seed works correctly
+      ✓ Legacy path migration works correctly  
+      ✓ Idempotent - safe for multiple redeploys
+      ✓ All image URLs use /api/static/products/ prefix
+      ✓ Static image serving working on localhost:8001
+      ✓ Admin authentication preserved
+      
+      The backend is production-ready for redeploy. Seed script will correctly populate a fresh database with all 9 products and migrate any legacy image paths.
