@@ -9,7 +9,7 @@ const CustomCta = () => {
         <div className="relative overflow-hidden bg-[var(--sand)]">
           <div className="grid grid-cols-1 lg:grid-cols-2">
             <div className="relative aspect-[4/3] lg:aspect-auto lg:min-h-[520px]">
-              <img src="https://images.pexels.com/photos/5793642/pexels-photo-5793642.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" alt="Custom commission" className="absolute inset-0 w-full h-full object-cover" />
+              <img src={`${process.env.REACT_APP_BACKEND_URL}/api/static/products/studio-03.jpg`} alt="Custom commission" className="absolute inset-0 w-full h-full object-cover" />
             </div>
             <div className="p-10 lg:p-16 flex flex-col justify-center">
               <p className="text-xs tracking-[0.3em] uppercase text-[var(--copper)] mb-5">— Custom commissions</p>

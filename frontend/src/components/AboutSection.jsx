@@ -10,7 +10,7 @@ const AboutSection = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
           <div className="lg:col-span-5">
             <div className="relative aspect-[4/5] overflow-hidden">
-              <img src="https://images.unsplash.com/photo-1691957713140-a9a042252202?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2Mzl8MHwxfHNlYXJjaHwyfHxtb2Rlcm4lMjBzY3VscHR1cmV8ZW58MHx8fHwxNzg1MTU3NjA0fDA&ixlib=rb-4.1.0&q=85" alt="Studio" className="w-full h-full object-cover" />
+              <img src={`${process.env.REACT_APP_BACKEND_URL}/api/static/products/studio-02.jpg`} alt="Studio" className="w-full h-full object-cover" />
               <div className="absolute -bottom-6 -right-6 hidden lg:block bg-[var(--copper)] text-white px-8 py-6">
                 <p className="font-serif-display text-4xl leading-none">04</p>
                 <p className="text-[10px] tracking-[0.25em] uppercase mt-1">Years of craft</p>
