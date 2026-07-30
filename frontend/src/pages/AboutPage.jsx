@@ -3,10 +3,12 @@ import { Link } from "react-router-dom";
 import { processSteps } from "../mock";
 import { ArrowRight } from "lucide-react";
 
+const BACKEND = process.env.REACT_APP_BACKEND_URL;
+
 const values = [
-  { t: "Craft over speed", d: "We’d rather print 12 pieces beautifully than 1200 quickly. Every object leaves the studio hand-inspected." },
-  { t: "Design forever", d: "We build for permanence. No trends, no plastic feel—just objects that age gracefully in real homes." },
-  { t: "Kinder materials", d: "Plant-based PLA, recycled composites and reusable packaging. Additive by nature, mindful by choice." },
+  { t: "Craft with intent", d: "Every form starts with imagination, then blends with technology. We make objects meant to be felt, not just seen." },
+  { t: "Design that lasts", d: "No trends, no plastic feel. We design pieces that grow into a home, adding personality and warmth over years, not seasons." },
+  { t: "Kinder materials", d: "Eco-friendly PLA, mindful production and energy-efficient printing. Beautiful design shouldn't come at the planet's expense." },
 ];
 
 const AboutPage = () => {
@@ -17,10 +19,10 @@ const AboutPage = () => {
         <div className="max-w-[1200px] mx-auto px-6 lg:px-10">
           <p className="text-xs tracking-[0.3em] uppercase text-[var(--copper)] mb-6">— Our Story</p>
           <h1 className="font-serif-display text-6xl lg:text-8xl leading-[1.02] text-[var(--espresso)] max-w-4xl">
-            A studio for <em className="italic text-[var(--copper)]">sculptural</em> objects.
+            Design you can <em className="italic text-[var(--copper)]">feel</em>.
           </h1>
           <p className="mt-10 text-lg text-[var(--espresso)]/70 leading-relaxed max-w-2xl">
-            Venus 3D Creations began as a quiet experiment—a designer, a machine and a single lamp printed overnight. Four years on, it has become a studio of makers who see additive manufacturing as a modern craft.
+            At Venus 3D Creations, we believe design is more than something you see — it's something you feel. We blend imagination with technology to create pieces that bring warmth, character, and art into everyday spaces.
           </p>
         </div>
       </section>
@@ -28,7 +30,7 @@ const AboutPage = () => {
       {/* Image */}
       <section className="max-w-[1400px] mx-auto px-6 lg:px-10 -mt-10 lg:-mt-16">
         <div className="aspect-[16/9] overflow-hidden bg-[var(--sand)]">
-          <img src="https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDF8MHwxfHNlYXJjaHw0fHxtaW5pbWFsaXN0JTIwZGVjb3J8ZW58MHx8fHwxNzg1MTU3NTk4fDA&ixlib=rb-4.1.0&q=85" alt="Studio" className="w-full h-full object-cover" />
+          <img src={`${BACKEND}/api/static/products/studio-01.jpg`} alt="Venus 3D Creations Studio" className="w-full h-full object-cover" />
         </div>
       </section>
 
@@ -36,11 +38,12 @@ const AboutPage = () => {
       <section className="py-24 lg:py-32">
         <div className="max-w-[1000px] mx-auto px-6 lg:px-10">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-            <p className="text-xs tracking-[0.3em] uppercase text-[var(--copper)]">Founded 2021</p>
+            <p className="text-xs tracking-[0.3em] uppercase text-[var(--copper)]">Founded 2025 · Ahmedabad</p>
             <div className="md:col-span-2 space-y-6 text-[var(--espresso)]/80 leading-relaxed text-lg">
-              <p>We work between algorithm and atelier. A form begins as a parametric sketch, then goes through weeks of iteration on paper, on-screen and in resin before it is ever printed at scale.</p>
-              <p>Every finished piece is sanded, sealed and hand-polished in our workshop. Some of our objects carry small studio marks—they are not flaws, they are proof of a hand.</p>
-              <p>We believe 3D printing deserves the reverence given to ceramics, glass or metal. So we don’t make products. We make objects—sculptural, personal, made to last a long time in a real home.</p>
+              <p>We specialize in 3D printed lamps, sculptures and décor pieces that are as functional as they are beautiful. Every lamp is crafted to do more than light a room — it sets a mood and tells a story. Our sculptures turn simple corners into conversation pieces, adding personality and artistry to any home.</p>
+              <p>Beyond our signature collections, we offer DIY kits for those who love to create with their own hands, along with custom-designed pieces tailored to your vision — whether it's a one-of-a-kind gift, a personalized home accent, or a design made just for you.</p>
+              <p>Sustainability sits at the heart of everything we make. We choose eco-friendly materials and energy-efficient solutions, because beautiful design shouldn't come at the planet's expense.</p>
+              <p className="italic text-[var(--copper)]">Every piece from Venus 3D Creations is made with care, precision, and a little bit of magic — crafted not just to fill a space, but to inspire it.</p>
             </div>
           </div>
         </div>
@@ -53,7 +56,7 @@ const AboutPage = () => {
           <h2 className="font-serif-display text-5xl lg:text-6xl leading-[1.05] max-w-2xl">Three principles hold the studio together.</h2>
           <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-10">
             {values.map((v, i) => (
-              <div key={i} className="border-t border-[var(--sand)] pt-6">
+              <div key={v.t} className="border-t border-[var(--sand)] pt-6">
                 <p className="font-serif-display text-2xl text-[var(--copper)]">0{i + 1}</p>
                 <h3 className="font-serif-display text-3xl mt-3">{v.t}</h3>
                 <p className="mt-4 text-[var(--espresso)]/70 leading-relaxed">{v.d}</p>

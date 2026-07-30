@@ -71,7 +71,7 @@ const Hero = () => {
         <div className="vc-marquee-track">
           {Array(2).fill(0).map((_, r) => (
             <div key={r} className="flex items-center gap-16 pr-16">
-              {["Sculptural", "Made in India", "Hand\u2011finished", "Made to Order", "One of One", "Studio Craft", "Since 2021", "Sculptural", "Made in India", "Hand\u2011finished"].map((w, i) => (
+              {["Sculptural", "Made in India", "Made to Order", "One of One", "Studio Craft", "Since 2025", "Sculptural", "Made in India", "Made to Order", "One of One"].map((w, i) => (
                 <span key={i} className="font-serif-display italic text-3xl md:text-4xl text-[var(--espresso)]/40">
                   {w} <span className="text-[var(--copper)]">•</span>
                 </span>

@@ -12,8 +12,8 @@ const AboutSection = () => {
             <div className="relative aspect-[4/5] overflow-hidden">
               <img src={`${process.env.REACT_APP_BACKEND_URL}/api/static/products/studio-02.jpg`} alt="Studio" className="w-full h-full object-cover" />
               <div className="absolute -bottom-6 -right-6 hidden lg:block bg-[var(--copper)] text-white px-8 py-6">
-                <p className="font-serif-display text-4xl leading-none">04</p>
-                <p className="text-[10px] tracking-[0.25em] uppercase mt-1">Years of craft</p>
+                <p className="font-serif-display text-4xl leading-none">2025</p>
+                <p className="text-[10px] tracking-[0.25em] uppercase mt-1">Studio founded</p>
               </div>
             </div>
           </div>
@@ -21,10 +21,10 @@ const AboutSection = () => {
           <div className="lg:col-span-7">
             <p className="text-xs tracking-[0.3em] uppercase text-[var(--copper-light)] mb-6">— The Studio</p>
             <h2 className="font-serif-display text-4xl lg:text-6xl leading-[1.05]">
-              We treat every print as a <em className="italic text-[var(--copper-light)]">first draft</em>— then finish it by hand.
+              Design is more than something you <em className="italic text-[var(--copper-light)]">see</em>— it's something you <em className="italic">feel</em>.
             </h2>
             <p className="mt-8 text-[var(--cream)]/70 leading-relaxed max-w-xl">
-              Venus was founded on a simple belief—that additive manufacturing deserves the same reverence given to ceramics, glass and metal. Our studio is a hybrid of algorithm and atelier.
+              At Venus 3D Creations, we blend imagination with technology to create pieces that bring warmth, character and art into everyday spaces. Every lamp does more than light a room — it sets a mood and tells a story.
             </p>
 
             <div className="mt-12 grid grid-cols-2 gap-8">

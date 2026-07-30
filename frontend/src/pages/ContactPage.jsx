@@ -35,9 +35,9 @@ const ContactPage = () => {
         <div className="max-w-[1200px] mx-auto px-6 lg:px-10 grid grid-cols-1 lg:grid-cols-12 gap-12">
           <div className="lg:col-span-4 space-y-8">
             {[
-              { Icon: MapPin, t: "Studio", v: "Bengaluru, India\u2014by appointment only" },
-              { Icon: Mail, t: "Email", v: "studio@venus3dcreations.com" },
-              { Icon: Phone, t: "Phone", v: "+91 • By request over email" },
+              { Icon: MapPin, t: "Studio", v: "Ahmedabad, India—by appointment only" },
+              { Icon: Mail, t: "Email", v: "venus3dcreations@gmail.com" },
+              { Icon: Phone, t: "Phone", v: "+91 88494 40828" },
               { Icon: Clock, t: "Hours", v: "Mon–Sat  10:00–19:00 IST" },
             ].map(({ Icon, t, v }, i) => (
               <div key={i} className="flex gap-4">

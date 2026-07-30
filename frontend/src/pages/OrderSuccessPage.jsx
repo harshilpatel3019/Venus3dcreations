@@ -38,7 +38,7 @@ const OrderSuccessPage = () => {
           <p className="text-xs tracking-[0.3em] uppercase text-[var(--copper)] mb-4">{isPaid ? "— Payment received" : "— Order placed"}</p>
           <h1 className="font-serif-display text-5xl lg:text-6xl leading-[1.05] text-[var(--espresso)]">Thank you.</h1>
           <p className="mt-6 text-[var(--espresso)]/70 max-w-xl mx-auto leading-relaxed">
-            Your order <span className="text-[var(--copper)] font-medium">#{order.id.slice(0, 8).toUpperCase()}</span> has been received. Every piece is made-to-order and hand-finished in our studio before it ships. You'll receive an email confirmation shortly.
+            Your order <span className="text-[var(--copper)] font-medium">#{order.id.slice(0, 8).toUpperCase()}</span> has been received. Every piece is made-to-order in our studio before it ships. You'll receive an email confirmation shortly.
           </p>
         </div>
 

@@ -39,7 +39,7 @@ export const categories = [
 ];
 
 export const testimonials = [
-  { id: 1, name: "Ananya R.", role: "Interior Designer, Bengaluru", text: "Venus pieces have become the signature detail in every project I finish. They read as sculpture first, functional object second." },
+  { id: 1, name: "Ananya R.", role: "Interior Designer, Ahmedabad", text: "Venus pieces have become the signature detail in every project I finish. They read as sculpture first, functional object second." },
   { id: 2, name: "Marcus L.", role: "Collector, London", text: "The craftsmanship is remarkable. My lamp arrived flawlessly finished — you can tell every piece is treated as art." },
   { id: 3, name: "Priya S.", role: "Homeowner, Dubai", text: "Ordered a custom bust of my late grandfather. The team was patient, thoughtful, and the result moved my entire family." },
 ];
@@ -47,6 +47,6 @@ export const testimonials = [
 export const processSteps = [
   { n: "01", title: "Design", copy: "Every form begins as a sketch, then a parametric 3D model refined over weeks." },
   { n: "02", title: "Print", copy: "Printed layer by layer in premium sustainable materials on industrial machines." },
-  { n: "03", title: "Finish", copy: "Hand-sanded, sealed and polished in our studio. No two pieces are identical." },
+  { n: "03", title: "Finish", copy: "Sanded, sealed and quality-checked in our studio. No two pieces are identical." },
   { n: "04", title: "Deliver", copy: "Packaged with care and shipped across India from our workshop." },
 ];

@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Instagram, Facebook, Youtube, Mail } from "lucide-react";
+import { Instagram, Facebook, Mail, Phone } from "lucide-react";
 import { LOGO_URL } from "../mock";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
@@ -22,14 +22,26 @@ const Footer = () => {
           <div className="md:col-span-4">
             <img src={LOGO_URL} alt="Venus" className="h-14 w-auto bg-[var(--cream)] p-2 rounded-sm" />
             <p className="mt-6 text-[var(--cream)]/70 leading-relaxed max-w-sm">
-              A studio for sculptural, 3D-printed objects. Designed and hand-finished piece by piece.
+              A studio for sculptural, 3D-printed objects — designed with imagination, crafted with technology, made to be felt.
             </p>
             <div className="flex gap-4 mt-6">
-              {[Instagram, Facebook, Youtube].map((Icon, i) => (
-                <a key={i} href="#" className="w-10 h-10 rounded-full border border-[var(--cream)]/20 flex items-center justify-center hover:bg-[var(--copper)] hover:border-[var(--copper)] transition-colors">
-                  <Icon className="w-4 h-4" />
-                </a>
-              ))}
+              <a href="https://www.instagram.com/venus3dcreations" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="w-10 h-10 rounded-full border border-[var(--cream)]/20 flex items-center justify-center hover:bg-[var(--copper)] hover:border-[var(--copper)] transition-colors">
+                <Instagram className="w-4 h-4" />
+              </a>
+              <a href="https://www.facebook.com/venus3dcreations" target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="w-10 h-10 rounded-full border border-[var(--cream)]/20 flex items-center justify-center hover:bg-[var(--copper)] hover:border-[var(--copper)] transition-colors">
+                <Facebook className="w-4 h-4" />
+              </a>
+              <a href="mailto:venus3dcreations@gmail.com" aria-label="Email" className="w-10 h-10 rounded-full border border-[var(--cream)]/20 flex items-center justify-center hover:bg-[var(--copper)] hover:border-[var(--copper)] transition-colors">
+                <Mail className="w-4 h-4" />
+              </a>
+              <a href="tel:+918849440828" aria-label="Phone" className="w-10 h-10 rounded-full border border-[var(--cream)]/20 flex items-center justify-center hover:bg-[var(--copper)] hover:border-[var(--copper)] transition-colors">
+                <Phone className="w-4 h-4" />
+              </a>
+            </div>
+            <div className="mt-6 text-xs text-[var(--cream)]/60 space-y-1">
+              <p>Ahmedabad, India</p>
+              <p><a href="mailto:venus3dcreations@gmail.com" className="hover:text-[var(--copper-light)]">venus3dcreations@gmail.com</a></p>
+              <p><a href="tel:+918849440828" className="hover:text-[var(--copper-light)]">+91 88494 40828</a></p>
             </div>
           </div>
 
