@@ -139,8 +139,11 @@ async def ensure_admin(db):
             await db.users.update_one({"_id": existing["_id"]}, {"$set": {"role": "admin"}})
             logger.info(f"Promoted {admin_email} to admin.")
         return
+    admin_password = os.environ.get("ADMIN_PASSWORD", "venus@admin2025")
+    if admin_password == "venus@admin2025":
+        logger.warning("Admin seeded with the default password — set ADMIN_PASSWORD in the environment for production.")
     admin = User(email=admin_email, name="Venus Studio", role="admin", provider="email")
     doc = admin.model_dump()
-    doc["password_hash"] = hash_password("venus@admin2025")
+    doc["password_hash"] = hash_password(admin_password)
     await db.users.insert_one(doc)
-    logger.info(f"Created default admin: {admin_email} / venus@admin2025")
+    logger.info(f"Created admin user: {admin_email}")

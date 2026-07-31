@@ -7,6 +7,11 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Optional
 
 JWT_SECRET = os.environ.get("JWT_SECRET", "change_me")
+if JWT_SECRET == "change_me":
+    import logging
+    logging.getLogger(__name__).warning(
+        "JWT_SECRET is not set — using an insecure default. Anyone can forge tokens. Set JWT_SECRET in production."
+    )
 JWT_ALG = "HS256"
 JWT_EXPIRE_DAYS = 30
 

@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: venus-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn server:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: MONGO_URL
+        sync: false
+      - key: DB_NAME
+        value: venus3d
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ADMIN_EMAIL
+        value: venus3dcreations@gmail.com
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: GMAIL_USER
+        value: venus3dcreations@gmail.com
+      - key: GMAIL_APP_PASSWORD
+        sync: false
+      - key: CORS_ORIGINS
+        value: https://venus3dcreations.com,https://www.venus3dcreations.com
