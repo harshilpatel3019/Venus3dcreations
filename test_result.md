@@ -182,6 +182,63 @@ backend:
           ✓ Admin access preserved
           
           The seed & migration logic is production-ready for redeploy.
+      - working: true
+        agent: "testing"
+        comment: |
+          ✅ UUID-IMAGE MIGRATION TESTING COMPLETE - ALL 6 TESTS PASSED
+          
+          Verified the updated seed.py migration logic that detects and migrates stale UUID-named admin uploads.
+          Created comprehensive test suite (backend_uuid_migration_test.py) covering all production scenarios.
+          
+          TEST 1: UUID-image migration ✅ PASS
+          - Set wavy-lamp images to stale UUID: ["/api/static/products/5af4d276104c4bf2a77604392e59ecbf.jpg"]
+          - Restarted backend to trigger migration
+          - VERIFIED: Images migrated to studio photos:
+            ["/api/static/products/wavy-01.jpg", "/api/static/products/wavy-02.jpg", "/api/static/products/wavy-03.jpg"]
+          - UUID detection regex working correctly ✓
+          
+          TEST 2: Idempotency (correct images preserved) ✅ PASS
+          - Restarted backend with wavy-lamp already having correct 3 studio images
+          - VERIFIED: No changes - still [wavy-01.jpg, wavy-02.jpg, wavy-03.jpg]
+          - Idempotent behavior confirmed ✓
+          
+          TEST 3: Legacy path migration (regression check) ✅ PASS
+          - Set nova-lamp images to legacy PDF path: ["/api/static/products/lamp-002.jpg"]
+          - Restarted backend
+          - VERIFIED: Migrated to 8 studio photos:
+            ["/api/static/products/nova-01.jpg" through "/api/static/products/nova-08.jpg"]
+          - Legacy migration still working correctly ✓
+          
+          TEST 4: Custom non-UUID images survive ✅ PASS
+          - Set retro-lamp to custom filenames: ["/api/static/products/mycustom_retro.jpg", "/api/static/products/anothername.jpg"]
+          - Restarted backend
+          - VERIFIED: Custom images preserved unchanged
+          - Non-UUID admin uploads correctly preserved ✓
+          
+          TEST 5: All 9 products list correctly ✅ PASS
+          - GET /api/products returned 9 products
+          - All products have at least 1 image
+          - Product catalog intact after migrations ✓
+          
+          TEST 6: Static images reachable ✅ PASS
+          - curl /api/static/products/wavy-01.jpg → HTTP 200 ✓
+          - curl /api/static/products/nova-01.jpg → HTTP 200 ✓
+          - Static file serving working correctly ✓
+          
+          MIGRATION LOGIC VERIFIED:
+          ✓ UUID-named images (32-hex characters) detected and migrated
+          ✓ Legacy PDF paths (lamp-00X.jpg) still migrated correctly
+          ✓ Old prefix paths (/static/products/) migrated correctly
+          ✓ Custom non-UUID admin uploads preserved
+          ✓ Idempotent - safe for multiple restarts
+          ✓ All 9 products maintain correct image arrays
+          
+          PRODUCTION DEPLOYMENT SAFE:
+          The updated seed.py migration logic correctly handles the production issue where Wavy Lamp 
+          was pointing to a stale UUID-named admin upload. The migration will automatically detect 
+          and rewrite these to studio photography on next backend restart. All regression tests passed.
+          
+          Ready for production deployment.
 
 
   - task: "Products listing and detail endpoints"
@@ -377,3 +434,52 @@ agent_communication:
       ✓ Admin authentication preserved
       
       The backend is production-ready for redeploy. Seed script will correctly populate a fresh database with all 9 products and migrate any legacy image paths.
+
+  - agent: "testing"
+    message: |
+      ✅ UUID-IMAGE MIGRATION VERIFICATION COMPLETE - ALL 6 TESTS PASSED
+      
+      Verified the updated seed.py migration logic per user request. The production issue where 
+      Wavy Lamp was pointing to a stale UUID-named admin upload (5af4d276104c4bf2a77604392e59ecbf.jpg) 
+      is now resolved. Created backend_uuid_migration_test.py covering all 6 test scenarios.
+      
+      ALL 6 TESTS PASSED (6/6):
+      ✅ TEST 1: UUID-image migration
+         - Set wavy-lamp to UUID: /api/static/products/5af4d276104c4bf2a77604392e59ecbf.jpg
+         - Restarted backend
+         - RESULT: Migrated to [wavy-01.jpg, wavy-02.jpg, wavy-03.jpg] ✓
+      
+      ✅ TEST 2: Idempotency (correct images preserved)
+         - Restarted backend with wavy-lamp already having correct images
+         - RESULT: No changes, still [wavy-01.jpg, wavy-02.jpg, wavy-03.jpg] ✓
+      
+      ✅ TEST 3: Legacy path migration (regression check)
+         - Set nova-lamp to legacy: /api/static/products/lamp-002.jpg
+         - Restarted backend
+         - RESULT: Migrated to 8 studio photos [nova-01.jpg through nova-08.jpg] ✓
+      
+      ✅ TEST 4: Custom non-UUID images survive
+         - Set retro-lamp to custom: [mycustom_retro.jpg, anothername.jpg]
+         - Restarted backend
+         - RESULT: Custom images preserved unchanged ✓
+      
+      ✅ TEST 5: All 9 products list correctly
+         - GET /api/products returned 9 products
+         - All products have at least 1 image ✓
+      
+      ✅ TEST 6: Static images reachable
+         - /api/static/products/wavy-01.jpg → HTTP 200 ✓
+         - /api/static/products/nova-01.jpg → HTTP 200 ✓
+      
+      MIGRATION LOGIC VERIFIED:
+      ✓ UUID-named images (32-hex characters) detected and migrated
+      ✓ Legacy PDF paths (lamp-00X.jpg) still migrated correctly (regression test passed)
+      ✓ Old prefix paths (/static/products/) migrated correctly
+      ✓ Custom non-UUID admin uploads preserved
+      ✓ Idempotent - safe for multiple restarts
+      ✓ All 9 products maintain correct image arrays
+      
+      PRODUCTION DEPLOYMENT SAFE:
+      The updated seed.py correctly handles the production issue. On next backend restart,
+      any products with stale UUID-named admin uploads will be automatically migrated to
+      studio photography. All regression tests passed - existing functionality preserved.
