@@ -6,9 +6,7 @@ import { useAuth } from "../context/AuthContext";
 import { LOGO_URL } from "../mock";
 
 const NAV = [
-  { to: "/", label: "Home" },
   { to: "/shop", label: "Shop" },
-  { to: "/shop/lamps", label: "Lamps" },
   { to: "/about", label: "About" },
   { to: "/contact", label: "Contact" },
 ];
@@ -30,65 +28,59 @@ const Header = () => {
   useEffect(() => { setMobileOpen(false); }, [location.pathname]);
 
   return (
-    <>
-      <div className="bg-[var(--espresso)] text-[var(--cream)] text-xs tracking-[0.2em] uppercase py-2.5 text-center">
-        Complimentary shipping across India on orders above ₹2,500
+    <header className={`sticky top-0 z-40 transition-all duration-500 ${scrolled ? "bg-[var(--cream)]/95 backdrop-blur-md border-b border-[var(--sand)]/40" : "bg-[var(--cream)]"}`}>
+      <div className="max-w-[1400px] mx-auto px-6 lg:px-10 h-20 flex items-center justify-between">
+        <button className="lg:hidden p-2 -ml-2" onClick={() => setMobileOpen(true)} aria-label="Open menu"><Menu className="w-5 h-5" strokeWidth={1.25} /></button>
+
+        <Link to="/" className="flex items-center gap-3">
+          <img src={LOGO_URL} alt="Venus 3D Creations" className="h-10 lg:h-11 w-auto" />
+        </Link>
+
+        <nav className="hidden lg:flex items-center gap-12">
+          {NAV.map((n) => (
+            <NavLink key={n.to} to={n.to} className={({ isActive }) => `text-[11px] tracking-[0.28em] uppercase vc-link-underline transition-colors ${isActive ? "text-[var(--copper)]" : "text-[var(--espresso)]/80 hover:text-[var(--espresso)]"}`}>
+              {n.label}
+            </NavLink>
+          ))}
+        </nav>
+
+        <div className="flex items-center gap-1">
+          {isAdmin && (
+            <Link to="/admin" title="Admin Studio" className="hidden md:flex p-2 text-[var(--espresso)]/70 hover:text-[var(--espresso)] transition-colors">
+              <ShieldCheck className="w-4 h-4" strokeWidth={1.25} />
+            </Link>
+          )}
+          <Link to={user ? "/account" : "/login"} className="p-2 text-[var(--espresso)]/70 hover:text-[var(--espresso)] transition-colors" aria-label="Account">
+            <User className="w-4 h-4" strokeWidth={1.25} />
+          </Link>
+          <button onClick={() => setOpen(true)} className="relative p-2 text-[var(--espresso)]/70 hover:text-[var(--espresso)] transition-colors" aria-label="Cart">
+            <ShoppingBag className="w-4 h-4" strokeWidth={1.25} />
+            {count > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 bg-[var(--copper)] text-white text-[10px] font-medium w-4 h-4 rounded-full flex items-center justify-center">{count}</span>
+            )}
+          </button>
+        </div>
       </div>
 
-      <header className={`sticky top-0 z-40 transition-all duration-500 ${scrolled ? "bg-[var(--cream)]/95 backdrop-blur-md shadow-[0_1px_0_rgba(0,0,0,0.06)]" : "bg-[var(--cream)]"}`}>
-        <div className="max-w-[1400px] mx-auto px-6 lg:px-10 h-20 flex items-center justify-between">
-          <button className="lg:hidden p-2 -ml-2" onClick={() => setMobileOpen(true)} aria-label="Open menu"><Menu className="w-5 h-5" /></button>
-
-          <Link to="/" className="flex items-center gap-3">
-            <img src={LOGO_URL} alt="Venus 3D Creations" className="h-10 lg:h-12 w-auto" />
-          </Link>
-
-          <nav className="hidden lg:flex items-center gap-9">
+      {mobileOpen && (
+        <div className="fixed inset-0 z-50 bg-[var(--cream)] lg:hidden">
+          <div className="h-20 flex items-center justify-between px-6">
+            <img src={LOGO_URL} alt="Venus" className="h-10" />
+            <button onClick={() => setMobileOpen(false)} aria-label="Close"><X className="w-6 h-6" strokeWidth={1.25} /></button>
+          </div>
+          <nav className="flex flex-col px-6 pt-8 gap-6">
             {NAV.map((n) => (
-              <NavLink key={n.to} to={n.to} end={n.to === "/"} className={({ isActive }) => `text-[13px] tracking-[0.14em] uppercase vc-link-underline transition-colors ${isActive ? "text-[var(--copper)]" : "text-[var(--espresso)] hover:text-[var(--copper)]"}`}>
+              <NavLink key={n.to} to={n.to} className={({ isActive }) => `text-2xl font-serif-display font-light ${isActive ? "text-[var(--copper)]" : "text-[var(--espresso)]"}`}>
                 {n.label}
               </NavLink>
             ))}
+            <div className="h-px bg-[var(--sand)] my-2" />
+            <NavLink to={user ? "/account" : "/login"} className="text-2xl font-serif-display font-light text-[var(--espresso)]">{user ? "My account" : "Sign in"}</NavLink>
+            {isAdmin && <NavLink to="/admin" className="text-2xl font-serif-display font-light text-[var(--copper)]">Admin</NavLink>}
           </nav>
-
-          <div className="flex items-center gap-3">
-            {isAdmin && (
-              <Link to="/admin" title="Admin Studio" className="hidden md:flex p-2 hover:text-[var(--copper)] transition-colors">
-                <ShieldCheck className="w-5 h-5" />
-              </Link>
-            )}
-            <Link to={user ? "/account" : "/login"} className="p-2 hover:text-[var(--copper)] transition-colors" aria-label="Account">
-              <User className="w-5 h-5" />
-            </Link>
-            <button onClick={() => setOpen(true)} className="relative p-2 hover:text-[var(--copper)] transition-colors" aria-label="Cart">
-              <ShoppingBag className="w-5 h-5" />
-              {count > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 bg-[var(--copper)] text-white text-[10px] font-medium w-4 h-4 rounded-full flex items-center justify-center">{count}</span>
-              )}
-            </button>
-          </div>
         </div>
-
-        {mobileOpen && (
-          <div className="fixed inset-0 z-50 bg-[var(--cream)] lg:hidden">
-            <div className="h-20 flex items-center justify-between px-6">
-              <img src={LOGO_URL} alt="Venus" className="h-10" />
-              <button onClick={() => setMobileOpen(false)} aria-label="Close"><X className="w-6 h-6" /></button>
-            </div>
-            <nav className="flex flex-col px-6 pt-8 gap-6">
-              {NAV.map((n) => (
-                <NavLink key={n.to} to={n.to} end={n.to === "/"} className={({ isActive }) => `text-2xl font-serif-display ${isActive ? "text-[var(--copper)]" : "text-[var(--espresso)]"}`}>
-                  {n.label}
-                </NavLink>
-              ))}
-              <div className="h-px bg-[var(--sand)] my-2" />
-              <NavLink to={user ? "/account" : "/login"} className="text-2xl font-serif-display text-[var(--espresso)]">{user ? "My account" : "Sign in"}</NavLink>
-              {isAdmin && <NavLink to="/admin" className="text-2xl font-serif-display text-[var(--copper)]">Admin Studio</NavLink>}
-            </nav>
-          </div>
-        )}
-      </header>
-    </>
+      )}
+    </header>
   );
 };
 
