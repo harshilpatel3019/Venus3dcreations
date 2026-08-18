@@ -6,6 +6,7 @@ import { AuthProvider } from "./context/AuthContext";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import CartDrawer from "./components/CartDrawer";
+import RouteTracker from "./components/RouteTracker";
 import HomePage from "./pages/HomePage";
 import ShopPage from "./pages/ShopPage";
 import ProductDetailPage from "./pages/ProductDetailPage";
@@ -29,6 +30,7 @@ function App() {
       <AuthProvider>
         <CartProvider>
           <BrowserRouter>
+            <RouteTracker />
             <Routes>
               {/* Admin (own layout, no site header/footer) */}
               <Route path="/admin" element={<AdminLayout />}>

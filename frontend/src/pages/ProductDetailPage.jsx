@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Minus, Plus, ChevronRight, Loader2, X } from "lucide-react";
 import ProductCard from "../components/ProductCard";
 import { fetchProduct, fetchProducts, imgUrl, formatINR } from "../api";
+import { trackViewItem } from "../analytics";
 
 const ProductDetailPage = () => {
   const { id } = useParams();
@@ -21,6 +22,7 @@ const ProductDetailPage = () => {
     fetchProduct(id)
       .then(async (p) => {
         setProduct(p);
+        try { trackViewItem(p); } catch (e) {}
         const all = await fetchProducts({ category: p.category });
         setRelated(all.filter((x) => x.id !== p.id).slice(0, 4));
       })

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useMemo } from "react";
+import { trackAddToCart } from "../analytics";
 
 const CartContext = createContext(null);
 const STORAGE_KEY = "venus_cart_v2";
@@ -33,6 +34,7 @@ export const CartProvider = ({ children }) => {
         },
       ];
     });
+    try { trackAddToCart(product, qty); } catch (e) { /* no-op */ }
     setOpen(true);
   };
 
