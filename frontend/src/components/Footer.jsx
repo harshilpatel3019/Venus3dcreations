@@ -22,6 +22,8 @@ const Footer = () => {
               <li><Link to="/shop" className="vc-link-underline">Shop</Link></li>
               <li><Link to="/about" className="vc-link-underline">About</Link></li>
               <li><Link to="/contact" className="vc-link-underline">Contact</Link></li>
+              <li><Link to="/policies/shipping" className="vc-link-underline">Shipping</Link></li>
+              <li><Link to="/policies/refunds" className="vc-link-underline">Refunds</Link></li>
             </ul>
           </div>
 
@@ -40,9 +42,9 @@ const Footer = () => {
         <div className="border-t border-[var(--cream)]/10 mt-12 pt-6 flex flex-col md:flex-row justify-between items-center gap-3 text-[11px] tracking-[0.2em] uppercase text-[var(--cream)]/40">
           <p>© {new Date().getFullYear()} Venus 3D Creations</p>
           <div className="flex gap-6">
-            <a href="#" className="hover:text-[var(--cream)]/70">Privacy</a>
-            <a href="#" className="hover:text-[var(--cream)]/70">Shipping</a>
-            <a href="#" className="hover:text-[var(--cream)]/70">Returns</a>
+            <Link to="/policies/privacy" className="hover:text-[var(--cream)]/70">Privacy</Link>
+            <Link to="/policies/terms" className="hover:text-[var(--cream)]/70">Terms</Link>
+            <Link to="/policies/refunds" className="hover:text-[var(--cream)]/70">Refunds</Link>
           </div>
         </div>
       </div>
