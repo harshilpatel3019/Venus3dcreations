@@ -1,6 +1,6 @@
 # Venus 3D Creations
 
-Sculptural, 3D-printed lamps and home objects. E-commerce site built with React, FastAPI, and MongoDB. Payments via Razorpay. Order emails via Gmail SMTP.
+Sculptural, 3D-printed lamps and home objects. E-commerce site built with React, FastAPI, and MongoDB. Payments via Razorpay. Order emails via Gmail SMTP. Shipping via Shiprocket.
 
 Live site: https://venus3dcreations.com
 
@@ -12,6 +12,7 @@ Live site: https://venus3dcreations.com
 - **Backend**: FastAPI (Python 3.11+), Motor (async MongoDB), Razorpay SDK, JWT auth (bcrypt)
 - **Database**: MongoDB
 - **Payments**: Razorpay (India, INR)
+- **Shipping**: Shiprocket
 - **Emails**: Gmail SMTP (App Password)
 - **Product images**: Local filesystem (`backend/static/products/`) served via FastAPI static
 
@@ -20,25 +21,27 @@ Live site: https://venus3dcreations.com
 ## Repo Layout
 
 ```
-app/
-├─ backend/                   # FastAPI backend
-│  ├─ server.py               # main app + all API routes
-│  ├─ models.py               # Pydantic models
-│  ├─ auth.py                 # JWT + bcrypt helpers
-│  ├─ seed.py                 # idempotent product seeding + migration
-│  ├─ email_service.py        # Gmail SMTP order emails
-│  ├─ static/products/        # product photos (served at /api/static/products/*)
-│  ├─ requirements.txt
-│  └─ .env.example            # copy to .env and fill in
-└─ frontend/                  # React frontend
-   ├─ src/
-   │  ├─ pages/                # route pages
-   │  ├─ components/           # shared components
-   │  ├─ context/              # Cart + Auth React contexts
-   │  ├─ api.js                # axios client + helpers
-   │  └─ mock.js               # static content (categories, testimonials)
-   ├─ package.json
-   └─ .env.example             # copy to .env and fill in
+backend/                   # FastAPI backend
+├─ server.py               # main app + all API routes
+├─ models.py               # Pydantic models
+├─ auth.py                 # JWT + bcrypt helpers
+├─ seed.py                 # idempotent product seeding + migration
+├─ email_service.py        # Gmail SMTP order emails
+├─ shiprocket.py           # Shiprocket shipping integration
+├─ static/products/        # product photos (served at /api/static/products/*)
+├─ requirements.txt
+└─ .env.example            # copy to .env and fill in
+frontend/                  # React frontend
+├─ src/
+│  ├─ pages/               # route pages (incl. admin/ and policies/)
+│  ├─ components/          # shared components
+│  ├─ context/             # Cart + Auth React contexts
+│  ├─ api.js               # axios client + helpers
+│  ├─ analytics.js         # GA4
+│  └─ mock.js              # static content (categories, testimonials)
+├─ package.json
+└─ .env.example            # copy to .env and fill in
+render.yaml                # Render blueprint for the backend
 ```
 
 ---
@@ -55,25 +58,21 @@ app/
 
 ```bash
 cd backend
-cp .env.example .env
-# Edit .env: fill in MONGO_URL, JWT_SECRET, RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET,
-# GMAIL_USER, GMAIL_APP_PASSWORD, ADMIN_EMAIL, FRONTEND_URL
-
+python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
+cp .env.example .env    # fill in MONGO_URL, JWT_SECRET, Razorpay keys, etc.
 uvicorn server:app --host 0.0.0.0 --port 8001 --reload
 ```
 
-On first startup, the seed script automatically creates 9 lamp products and an admin user (`venus3dcreations@gmail.com` / `venus@admin2025`). Change the admin password from the admin UI once you're up.
+On first startup the seed script creates 9 lamp products and an admin user
+(`ADMIN_EMAIL` / `ADMIN_PASSWORD` from the environment).
 
 ### 3. Frontend
 
 ```bash
 cd frontend
-cp .env.example .env
-# Edit .env: set REACT_APP_BACKEND_URL to your backend URL (e.g. http://localhost:8001)
-# and REACT_APP_RAZORPAY_KEY_ID to match your backend's RAZORPAY_KEY_ID
-
 yarn install
+cp .env.example .env    # REACT_APP_BACKEND_URL=http://localhost:8001
 yarn start
 ```
 
@@ -81,52 +80,100 @@ App opens at http://localhost:3000.
 
 ---
 
-## Production Deployment
+## Production Deployment (free tiers)
 
-Works on any host that supports Node + Python + MongoDB. Common options:
+The app splits across three services:
 
-- **VPS** (DigitalOcean, Hetzner, AWS EC2): install Node, Python, MongoDB, run backend under `systemd` or `pm2`, build frontend with `yarn build`, serve static build with nginx.
-- **Managed platforms**: Deploy backend to Railway / Render / Fly.io, frontend to Vercel / Netlify, DB to MongoDB Atlas.
+| Part | Service | Free tier |
+|---|---|---|
+| Database | [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) | M0, 512 MB |
+| Backend | [Render](https://render.com) | Web service (sleeps when idle) |
+| Frontend | [Vercel](https://vercel.com) / Netlify, or any static host (incl. cPanel shared hosting) | — |
 
-### Nginx reverse-proxy example
+### 1. MongoDB Atlas
 
-```nginx
-server {
-  server_name yourdomain.com;
+1. Create a free M0 cluster (AWS Mumbai `ap-south-1` is closest to customers in India).
+2. Database Access → add a user with a password.
+3. Network Access → allow `0.0.0.0/0` (Render's outbound IPs vary).
+4. Connect → Drivers → copy the connection string; replace `<password>`. This is `MONGO_URL`.
 
-  # Frontend static
-  root /var/www/venus/frontend/build;
-  index index.html;
-  location / {
-    try_files $uri /index.html;
-  }
+### 2. Render (backend)
 
-  # Backend API (all /api/* routes)
-  location /api/ {
-    proxy_pass http://127.0.0.1:8001;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    client_max_body_size 20M;
-  }
-}
+This repo contains a `render.yaml` blueprint. In Render: **New → Blueprint**, connect
+this GitHub repo, and it creates the `venus-api` **Python** service with the right build
+and start commands. Fill in the secret env vars it prompts for (`MONGO_URL`,
+`ADMIN_PASSWORD`, Razorpay keys, Gmail app password, Shiprocket credentials).
+
+> Do **not** create this as a plain Web Service — Render then auto-detects the repo as
+> Node.js and builds the frontend instead of the backend. Use New → Blueprint.
+
+On first boot the seed script populates the fresh database automatically.
+Verify: `https://<your-service>.onrender.com/api/products` returns 9 products.
+
+Free Render services sleep after ~15 min idle; the first request after that takes
+~30–60 s. Admin-panel image uploads land on ephemeral disk and are lost on redeploy
+(the 9 seeded products' photos live in the repo and are safe).
+
+### 3. Frontend
+
+Set `REACT_APP_BACKEND_URL` to the Render URL (no trailing slash), then either:
+
+**Vercel/Netlify** — import the repo, **Root Directory = `frontend`**, framework
+auto-detects as CRA, add the env var, deploy. `frontend/vercel.json` already handles
+the SPA rewrite so deep links like `/product/wavy-lamp` work.
+
+**cPanel shared hosting (e.g. Namecheap)** — build locally and upload:
+
+```bash
+cd frontend
+REACT_APP_BACKEND_URL=https://<your-service>.onrender.com yarn build
 ```
 
-### Environment variables checklist for production
+Upload the **contents** of `frontend/build/` into `public_html/`, and make sure
+`public_html/.htaccess` contains the SPA rewrite (`frontend/htaccess-spa.conf` in this
+repo is a ready-made copy):
 
-- `MONGO_URL` → production MongoDB URI (MongoDB Atlas recommended)
-- `JWT_SECRET` → a fresh, unique random string (do NOT reuse from dev)
-- `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` → **live** keys (`rzp_live_*`)
-- `FRONTEND_URL` → `https://venus3dcreations.com`
-- `REACT_APP_BACKEND_URL` → `https://venus3dcreations.com` (same domain, /api/ is proxied)
-- `REACT_APP_RAZORPAY_KEY_ID` → same live key id
+```apache
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+  RewriteRule ^index\.html$ - [L]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule . /index.html [L]
+</IfModule>
+```
+
+Then enable SSL in cPanel (SSL/TLS Status → Run AutoSSL).
+
+### 4. DNS
+
+Point the domain at whichever frontend host you chose:
+
+| Host | Record | Host | Value |
+|---|---|---|---|
+| Vercel | A | `@` | `76.76.21.21` |
+| Vercel | CNAME | `www` | `cname.vercel-dns.com.` |
+| cPanel | A | `@` | your hosting server's shared IP (cPanel sidebar) |
+
+Delete the old Emergent records (the `@` A records pointing at Emergent, and the
+`emergent` CNAME) only once the new site serves correctly.
+
+### 5. Go-live checklist
+
+- [ ] `ADMIN_PASSWORD` set before first boot (never ship the seeded default)
+- [ ] `JWT_SECRET` set to a long random value (render.yaml auto-generates one)
+- [ ] Swap Razorpay test keys (`rzp_test_…`) for live keys
+- [ ] `CORS_ORIGINS` matches your real domain(s)
+- [ ] Logo saved at `frontend/public/logo.webp` and `LOGO_URL` in `mock.js` set to `/logo.webp`
+- [ ] Test a real order end-to-end
 
 ---
 
 ## Admin
 
 - Login: `/login`, then navigate to `/admin` (only role=admin can access)
-- Default seeded credentials: `venus3dcreations@gmail.com` / `venus@admin2025`
-- **Change the default password from the admin UI** on first login
+- Credentials come from `ADMIN_EMAIL` / `ADMIN_PASSWORD` at first seed
 - Admin can: manage products (CRUD + image upload), view/update order status, see revenue stats
 
 ---

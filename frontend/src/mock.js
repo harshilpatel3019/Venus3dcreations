@@ -1,5 +1,8 @@
 // Static content (categories, testimonials, process). Products come from backend API.
 
+// MIGRATION: this file is hosted on Emergent's CDN and will break when the Emergent
+// subscription ends. Download it, save as frontend/public/logo.webp, then change
+// this line to: export const LOGO_URL = "/logo.webp";
 export const LOGO_URL = "https://customer-assets-m6fa6gv7.emergentagent.net/job_venus-v2/artifacts/urm3257g_Logo.webp";
 
 const BACKEND = process.env.REACT_APP_BACKEND_URL;

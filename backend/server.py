@@ -401,10 +401,12 @@ async def admin_upload(file: UploadFile = File(...), _: dict = Depends(require_a
 
 app.include_router(api)
 
+# Comma-separated list of allowed origins, e.g. "https://venus3dcreations.com,https://www.venus3dcreations.com"
+CORS_ORIGINS = [o.strip() for o in os.environ.get("CORS_ORIGINS", "*").split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=["*"],
+    allow_origins=CORS_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
