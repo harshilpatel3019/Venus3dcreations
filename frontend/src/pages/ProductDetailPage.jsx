@@ -2,9 +2,10 @@ import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { toast } from "sonner";
-import { Minus, Plus, Truck, ShieldCheck, RefreshCcw, ChevronRight, Loader2 } from "lucide-react";
+import { Minus, Plus, ChevronRight, Loader2, X } from "lucide-react";
 import ProductCard from "../components/ProductCard";
 import { fetchProduct, fetchProducts, imgUrl, formatINR } from "../api";
+import { trackViewItem } from "../analytics";
 
 const ProductDetailPage = () => {
   const { id } = useParams();
@@ -14,12 +15,14 @@ const ProductDetailPage = () => {
   const [related, setRelated] = useState([]);
   const [qty, setQty] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [infoOpen, setInfoOpen] = useState(false);
 
   useEffect(() => {
     setLoading(true);
     fetchProduct(id)
       .then(async (p) => {
         setProduct(p);
+        try { trackViewItem(p); } catch (e) {}
         const all = await fetchProducts({ category: p.category });
         setRelated(all.filter((x) => x.id !== p.id).slice(0, 4));
       })
@@ -107,28 +110,43 @@ const ProductDetailPage = () => {
 
             <div className="mt-10 flex items-center gap-4">
               <div className="flex items-center border border-[var(--sand)] h-12">
-                <button onClick={() => setQty((v) => Math.max(1, v - 1))} className="w-11 h-full flex items-center justify-center hover:bg-[var(--sand)]"><Minus className="w-3 h-3" /></button>
+                <button onClick={() => setQty((v) => Math.max(1, v - 1))} className="w-11 h-full flex items-center justify-center hover:bg-[var(--sand)]"><Minus className="w-3 h-3" strokeWidth={1.25} /></button>
                 <span className="w-10 text-center text-sm">{qty}</span>
-                <button onClick={() => setQty((v) => v + 1)} className="w-11 h-full flex items-center justify-center hover:bg-[var(--sand)]"><Plus className="w-3 h-3" /></button>
+                <button onClick={() => setQty((v) => v + 1)} className="w-11 h-full flex items-center justify-center hover:bg-[var(--sand)]"><Plus className="w-3 h-3" strokeWidth={1.25} /></button>
               </div>
-              <button onClick={onAdd} className="flex-1 h-12 vc-btn-copper text-xs tracking-[0.2em] uppercase">Add to bag</button>
+              <button onClick={onAdd} className="flex-1 h-12 vc-btn-ghost text-[11px] tracking-[0.28em] uppercase">Add to bag</button>
             </div>
-            <button onClick={onBuy} className="mt-3 w-full h-12 border border-[var(--espresso)] text-[var(--espresso)] text-xs tracking-[0.2em] uppercase hover:bg-[var(--espresso)] hover:text-[var(--cream)] transition-colors">Buy now</button>
+            <button onClick={onBuy} className="mt-3 w-full h-12 vc-btn-copper text-[11px] tracking-[0.28em] uppercase">Buy now</button>
 
-            <div className="mt-10 grid grid-cols-3 gap-4 border-t border-[var(--sand)] pt-8">
-              {[
-                { Icon: Truck, t: "India-wide shipping" },
-                { Icon: ShieldCheck, t: "Studio warranty" },
-                { Icon: RefreshCcw, t: "14-day returns" },
-              ].map(({ Icon, t }, i) => (
-                <div key={i} className="flex flex-col items-center text-center gap-2">
-                  <Icon className="w-5 h-5 text-[var(--copper)]" />
-                  <span className="text-[10px] tracking-[0.2em] uppercase text-[var(--espresso)]/60">{t}</span>
-                </div>
-              ))}
+            <div className="mt-8 text-xs text-[var(--espresso)]/60 space-y-1.5">
+              <p>Ships across India · Made to order · 14-day returns</p>
+              <button onClick={() => setInfoOpen(true)} className="text-[var(--espresso)]/70 hover:text-[var(--copper)] vc-link-underline">Shipping &amp; returns</button>
             </div>
           </div>
         </div>
+
+        {infoOpen && (
+          <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center px-6" onClick={() => setInfoOpen(false)}>
+            <div className="bg-[var(--cream)] max-w-lg w-full p-10 relative" onClick={(e) => e.stopPropagation()}>
+              <button onClick={() => setInfoOpen(false)} className="absolute top-4 right-4 p-2 hover:text-[var(--copper)]"><X className="w-4 h-4" strokeWidth={1.25} /></button>
+              <p className="text-[11px] tracking-[0.35em] uppercase text-[var(--espresso)]/60 mb-4">Shipping &amp; Returns</p>
+              <div className="space-y-5 text-sm text-[var(--espresso)]/75 leading-[1.9]">
+                <div>
+                  <p className="font-serif-display text-xl text-[var(--espresso)]">Shipping</p>
+                  <p>Every piece is made to order in our Ahmedabad studio and ships anywhere in India within the lead time noted above. Complimentary shipping on orders above ₹2,500. Below that, a flat ₹99 courier charge applies.</p>
+                </div>
+                <div>
+                  <p className="font-serif-display text-xl text-[var(--espresso)]">Returns</p>
+                  <p>If a piece arrives with any damage from transit, contact us within 14 days for a replacement or refund. Made-to-order and custom pieces are otherwise non-returnable.</p>
+                </div>
+                <div>
+                  <p className="font-serif-display text-xl text-[var(--espresso)]">Care</p>
+                  <p>Dust with a soft dry cloth. Avoid direct sunlight and moisture. Use only warm LED bulbs.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {related.length > 0 && (
           <div className="mt-24">

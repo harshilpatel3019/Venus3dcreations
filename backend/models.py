@@ -133,6 +133,13 @@ class Order(BaseModel):
     razorpay_order_id: Optional[str] = None
     razorpay_payment_id: Optional[str] = None
     razorpay_signature: Optional[str] = None
+    # Shiprocket
+    shiprocket_order_id: Optional[str] = None
+    shipment_id: Optional[str] = None
+    awb_code: Optional[str] = None
+    courier_name: Optional[str] = None
+    tracking_url: Optional[str] = None
+    ship_error: Optional[str] = None
     notes: Optional[str] = ""
     created_at: datetime = Field(default_factory=datetime.utcnow)
 

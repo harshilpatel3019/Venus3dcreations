@@ -6,6 +6,7 @@ import { AuthProvider } from "./context/AuthContext";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import CartDrawer from "./components/CartDrawer";
+import RouteTracker from "./components/RouteTracker";
 import HomePage from "./pages/HomePage";
 import ShopPage from "./pages/ShopPage";
 import ProductDetailPage from "./pages/ProductDetailPage";
@@ -17,6 +18,10 @@ import OrderSuccessPage from "./pages/OrderSuccessPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import AccountPage from "./pages/AccountPage";
+import ShippingPolicy from "./pages/policies/ShippingPolicy";
+import RefundPolicy from "./pages/policies/RefundPolicy";
+import PrivacyPolicy from "./pages/policies/PrivacyPolicy";
+import TermsPolicy from "./pages/policies/TermsPolicy";
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminProducts from "./pages/admin/AdminProducts";
@@ -29,6 +34,7 @@ function App() {
       <AuthProvider>
         <CartProvider>
           <BrowserRouter>
+            <RouteTracker />
             <Routes>
               {/* Admin (own layout, no site header/footer) */}
               <Route path="/admin" element={<AdminLayout />}>
@@ -57,6 +63,10 @@ function App() {
                       <Route path="/login" element={<LoginPage />} />
                       <Route path="/register" element={<RegisterPage />} />
                       <Route path="/account" element={<AccountPage />} />
+                      <Route path="/policies/shipping" element={<ShippingPolicy />} />
+                      <Route path="/policies/refunds" element={<RefundPolicy />} />
+                      <Route path="/policies/privacy" element={<PrivacyPolicy />} />
+                      <Route path="/policies/terms" element={<TermsPolicy />} />
                     </Routes>
                     <Footer />
                   </>

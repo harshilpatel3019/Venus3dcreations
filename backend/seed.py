@@ -92,9 +92,27 @@ SEED_LAMPS = [
 ]
 
 
+import re
+
+_HEX_UUID_RE = re.compile(r"/[a-f0-9]{32}\.jpe?g$", re.IGNORECASE)
+
+
 def _is_legacy_image(url: str) -> bool:
-    """Legacy PDF-extracted images look like /api/static/products/lamp-000.jpg or /static/products/lamp-000.jpg"""
-    return "lamp-00" in url or url.startswith("/static/products/")
+    """Detect image paths that should be migrated back to studio photography.
+
+    Matches:
+      - legacy PDF-extracted: /api/static/products/lamp-000.jpg
+      - old prefix (pre-ingress fix): /static/products/*
+      - stale admin uploads: /api/static/products/<32-hex>.jpg (files often
+        wiped when the container is rebuilt on a fresh deploy)
+    """
+    if "lamp-00" in url:
+        return True
+    if url.startswith("/static/products/"):
+        return True
+    if _HEX_UUID_RE.search(url):
+        return True
+    return False
 
 
 async def seed_products(db):

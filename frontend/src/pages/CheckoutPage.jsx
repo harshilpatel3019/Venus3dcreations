@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { createOrderApi, verifyPaymentApi, imgUrl, formatINR } from "../api";
+import { trackBeginCheckout, trackPurchase } from "../analytics";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
 import { toast } from "sonner";
@@ -42,7 +43,12 @@ const CheckoutPage = () => {
   const upd = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
   useEffect(() => {
-    if (items.length === 0) navigate("/cart");
+    if (items.length === 0) {
+      navigate("/cart");
+      return;
+    }
+    try { trackBeginCheckout(items, subtotal); } catch (e) {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items.length, navigate]);
 
   const validate = () => {
@@ -106,12 +112,13 @@ const CheckoutPage = () => {
         theme: { color: "#A87456" },
         handler: async (response) => {
           try {
-            await verifyPaymentApi({
+            const verified = await verifyPaymentApi({
               order_id: order.order_id,
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
             });
+            try { trackPurchase(verified.order || { id: order.order_id, total: order.total, currency: "INR", items, shipping }); } catch (e) {}
             toast.success("Payment successful");
             clearCart();
             navigate(`/order/${order.order_id}`);

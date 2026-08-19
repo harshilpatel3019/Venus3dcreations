@@ -27,3 +27,11 @@ services:
         sync: false
       - key: CORS_ORIGINS
         value: https://venus3dcreations.com,https://www.venus3dcreations.com
+      - key: SHIPROCKET_EMAIL
+        sync: false
+      - key: SHIPROCKET_PASSWORD
+        sync: false
+      - key: SHIPROCKET_PICKUP_LOCATION
+        value: Primary
+      - key: SHIPROCKET_AUTO_SHIP
+        value: "false"

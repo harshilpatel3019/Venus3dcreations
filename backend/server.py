@@ -25,6 +25,7 @@ from auth import (
 )
 from email_service import send_order_confirmation, send_admin_order_notification
 from seed import seed_products, ensure_admin
+import shiprocket as sr
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -225,7 +226,29 @@ async def verify_payment(data: RazorpayVerify):
         send_admin_order_notification(updated)
     except Exception as e:
         logger.error(f"Email send error: {e}")
-    return {"success": True, "order": updated}
+
+    # Auto-push to Shiprocket (best-effort, non-blocking to the client)
+    if sr.SR_AUTO_SHIP and sr._is_configured():
+        try:
+            ship_result = sr.create_shipment(updated)
+            await db.orders.update_one(
+                {"id": data.order_id},
+                {"$set": {
+                    "shiprocket_order_id": str(ship_result.get("shiprocket_order_id") or ""),
+                    "shipment_id": str(ship_result.get("shipment_id") or ""),
+                    "awb_code": ship_result.get("awb_code"),
+                    "courier_name": ship_result.get("courier_name"),
+                    "tracking_url": ship_result.get("tracking_url"),
+                    "status": "shipped" if ship_result.get("awb_code") else "paid",
+                }},
+            )
+            logger.info(f"Order {data.order_id} pushed to Shiprocket: awb={ship_result.get('awb_code')}")
+        except Exception as e:
+            logger.error(f"Shiprocket auto-push failed for {data.order_id}: {e}")
+            await db.orders.update_one({"id": data.order_id}, {"$set": {"ship_error": str(e)[:500]}})
+
+    updated = await db.orders.find_one({"id": data.order_id})
+    return {"success": True, "order": _clean(updated)}
 
 
 @api.get("/orders/{order_id}")
@@ -309,6 +332,50 @@ async def admin_stats(_: dict = Depends(require_admin)):
     revenue_docs = await revenue_cursor.to_list(1)
     revenue = revenue_docs[0]["total"] if revenue_docs else 0
     return {"products": products, "orders": orders, "paid_orders": paid, "revenue": revenue}
+
+
+# ============================
+# Shiprocket admin routes
+# ============================
+@api.get("/admin/shiprocket/pickup-locations")
+async def admin_sr_pickup_locations(_: dict = Depends(require_admin)):
+    try:
+        locations = sr.list_pickup_locations()
+        return {
+            "current": sr.SR_PICKUP_LOCATION,
+            "locations": [
+                {"nickname": l.get("pickup_location"), "address": l.get("address"), "city": l.get("city"), "pin_code": l.get("pin_code")}
+                for l in locations
+            ],
+        }
+    except sr.ShiprocketError as e:
+        raise HTTPException(400, f"Shiprocket: {e}")
+
+
+@api.post("/admin/orders/{order_id}/ship")
+async def admin_manual_ship(order_id: str, _: dict = Depends(require_admin)):
+    order = await db.orders.find_one({"id": order_id})
+    if not order:
+        raise HTTPException(404, "Order not found")
+    try:
+        ship_result = sr.create_shipment(order)
+        await db.orders.update_one(
+            {"id": order_id},
+            {"$set": {
+                "shiprocket_order_id": str(ship_result.get("shiprocket_order_id") or ""),
+                "shipment_id": str(ship_result.get("shipment_id") or ""),
+                "awb_code": ship_result.get("awb_code"),
+                "courier_name": ship_result.get("courier_name"),
+                "tracking_url": ship_result.get("tracking_url"),
+                "status": "shipped" if ship_result.get("awb_code") else "paid",
+                "ship_error": None,
+            }},
+        )
+        updated = await db.orders.find_one({"id": order_id})
+        return _clean(updated)
+    except sr.ShiprocketError as e:
+        await db.orders.update_one({"id": order_id}, {"$set": {"ship_error": str(e)[:500]}})
+        raise HTTPException(400, f"Shiprocket: {e}")
 
 
 # ============================
